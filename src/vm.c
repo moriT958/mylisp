@@ -4,6 +4,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "object.h"
+
 #ifdef DEBUG_TRACE_EXECUTION
 #include "debug.h"
 #endif
@@ -15,7 +17,13 @@ static void reset_stack(VM *vm) {
 void vm_init(VM *vm) {
     vm->chunk = NULL;
     vm->ip = NULL;
+    vm->bytes_allocated = 0;
+    vm->objects = NULL;
     reset_stack(vm);
+}
+
+void vm_free(VM *vm) {
+    object_free_all(vm);
 }
 
 static InterpretResult runtime_error(const char *format, ...) {

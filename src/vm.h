@@ -9,12 +9,14 @@
 // Fixed size so the stack never moves while the GC scans it.
 enum { STACK_MAX = 256 };
 
-typedef struct {
+struct VM {
     const Chunk *chunk;
     const uint8_t *ip;
     Value stack[STACK_MAX];
     Value *stack_top;
-} VM;
+    size_t bytes_allocated;
+    Obj *objects;
+};
 
 typedef enum {
     INTERPRET_OK,
@@ -22,6 +24,7 @@ typedef enum {
 } InterpretResult;
 
 void vm_init(VM *vm);
+void vm_free(VM *vm);
 
 // *result is written only on INTERPRET_OK.
 InterpretResult vm_interpret(VM *vm, const Chunk *chunk, Value *result);

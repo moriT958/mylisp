@@ -23,10 +23,10 @@ typedef struct {
 } Chunk;
 
 void chunk_init(Chunk *chunk);
-void chunk_write(Chunk *chunk, uint8_t byte);
-void chunk_free(Chunk *chunk);
+void chunk_write(VM *vm, Chunk *chunk, uint8_t byte);
+void chunk_free(VM *vm, Chunk *chunk);
 
 // Operands are one byte, so the compiler must reject indexes above 255.
-size_t chunk_add_constant(Chunk *chunk, Value value);
+size_t chunk_add_constant(VM *vm, Chunk *chunk, Value value);
 
 #endif

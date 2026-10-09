@@ -5,8 +5,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Forward declaration: object.h includes this header, so including it here would be circular.
+// Forward declarations: object.h and vm.h include this header, so including them here would be circular.
 typedef struct Obj Obj;
+typedef struct VM VM;
 
 typedef enum {
     VAL_NIL,
@@ -53,7 +54,7 @@ typedef struct {
 } ValueArray;
 
 void value_array_init(ValueArray *array);
-void value_array_write(ValueArray *array, Value v);
-void value_array_free(ValueArray *array);
+void value_array_write(VM *vm, ValueArray *array, Value v);
+void value_array_free(VM *vm, ValueArray *array);
 
 #endif

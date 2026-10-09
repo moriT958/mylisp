@@ -48,16 +48,16 @@ void value_array_init(ValueArray *array) {
     array->values = NULL;
 }
 
-void value_array_write(ValueArray *array, Value v) {
+void value_array_write(VM *vm, ValueArray *array, Value v) {
     if (array->capacity < array->count + 1) {
         size_t old_capacity = array->capacity;
         array->capacity = grow_capacity(old_capacity);
-        array->values = GROW_ARRAY(Value, array->values, old_capacity, array->capacity);
+        array->values = GROW_ARRAY(vm, Value, array->values, old_capacity, array->capacity);
     }
     array->values[array->count++] = v;
 }
 
-void value_array_free(ValueArray *array) {
-    FREE_ARRAY(Value, array->values, array->capacity);
+void value_array_free(VM *vm, ValueArray *array) {
+    FREE_ARRAY(vm, Value, array->values, array->capacity);
     value_array_init(array);
 }
