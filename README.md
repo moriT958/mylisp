@@ -13,7 +13,8 @@ Scheme subset.
 | `make clean` | Remove `build/` |
 
 ```bash
-# GC debug features are toggled with macros.
+# Debug features are toggled with macros:
+#   DEBUG_STRESS_GC, DEBUG_LOG_GC, DEBUG_TRACE_EXECUTION
 # Run make clean first when changing macros, since stale object files are not rebuilt.
-make clean && make EXTRA_CFLAGS="-DDEBUG_STRESS_GC -DDEBUG_LOG_GC"
+make clean && make EXTRA_CFLAGS="-DDEBUG_TRACE_EXECUTION"
 ```

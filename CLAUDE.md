@@ -38,10 +38,9 @@ A Scheme-subset interpreter in C: stack-based bytecode VM with a self-made mark-
 - Prefer `static inline` functions (snake_case) and `enum` constants over macros. Functions give type checking, single evaluation of arguments, and debuggability.
 - Use macros only where a function cannot do the job:
   - conditional compilation (`DEBUG_STRESS_GC`, `DEBUG_LOG_GC`, include guards)
-  - taking a type or operator token as an argument (`ALLOCATE(type, n)`, `BINARY_OP(op)`)
-  - X-macros that generate several things from one list (opcode enum, names, disassembler)
+  - taking a type or an operator token as an argument (`ALLOCATE(type, n)`)
   - `__FILE__` / `__LINE__` capture
-  - helpers local to one function, such as `READ_BYTE()` in the VM loop, with `#undef` afterwards
+- A helper that merely reads or computes a value is a `static inline` function, even when it is used in only one place (`read_byte(vm)`, not a local macro). If an operation can be passed as a function pointer, do that instead of passing a token to a macro.
 - When writing a macro: UPPER_CASE name, parenthesize each argument and the whole body, wrap multi-statement bodies in `do { ... } while (0)`, and evaluate each argument once.
 
 ### Naming
