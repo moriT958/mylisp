@@ -22,7 +22,7 @@ OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OUT_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 BIN  := $(OUT_DIR)/$(TARGET)
 
-.PHONY: all debug release run test clean
+.PHONY: all debug release run test format clean
 
 all: $(BIN)
 
@@ -46,6 +46,9 @@ run: $(BIN)
 
 test: $(BIN)
 	@./tests/run.sh $(BIN)
+
+format:
+	clang-format -i src/*.c src/*.h
 
 clean:
 	rm -rf build

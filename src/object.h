@@ -21,9 +21,15 @@ typedef struct {
 
 ObjPair *pair_new(VM *vm, Value car, Value cdr);
 
-static inline bool is_pair(Value v) { return is_obj(v) && as_obj(v)->type == OBJ_PAIR; }
-static inline ObjPair *as_pair(Value v) { return (ObjPair *)as_obj(v); }
-static inline Value val_pair(ObjPair *pair) { return val_obj(&pair->obj); }
+static inline bool is_pair(Value v) {
+    return is_obj(v) && as_obj(v)->type == OBJ_PAIR;
+}
+static inline ObjPair *as_pair(Value v) {
+    return (ObjPair *)as_obj(v);
+}
+static inline Value val_pair(ObjPair *pair) {
+    return val_obj(&pair->obj);
+}
 
 void object_free_all(VM *vm);
 

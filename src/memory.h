@@ -9,7 +9,7 @@
 // old_size is passed because free() does not report sizes.
 void *reallocate(VM *vm, void *ptr, size_t old_size, size_t new_size);
 
-#define GROW_ARRAY(vm, type, ptr, old_count, new_count) \
+#define GROW_ARRAY(vm, type, ptr, old_count, new_count)                                            \
     ((type *)reallocate((vm), (ptr), sizeof(type) * (old_count), sizeof(type) * (new_count)))
 
 #define FREE_ARRAY(vm, type, ptr, old_count) reallocate((vm), (ptr), sizeof(type) * (old_count), 0)
