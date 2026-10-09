@@ -6,6 +6,7 @@
 typedef enum {
     OBJ_PAIR,
     OBJ_STRING,
+    OBJ_SYMBOL,
 } ObjType;
 
 // Every object struct starts with this header so an Obj* can stand for any of them.
@@ -49,6 +50,26 @@ static inline ObjString *as_string(Value v) {
 }
 static inline Value val_string(ObjString *string) {
     return val_obj(&string->obj);
+}
+
+typedef struct {
+    Obj obj;
+    uint32_t hash;
+    size_t length;
+    char chars[];
+} ObjSymbol;
+
+// Interned: the same name always returns the same object, so symbols compare by pointer.
+ObjSymbol *symbol_intern(VM *vm, const char *chars, size_t length);
+
+static inline bool is_symbol(Value v) {
+    return is_obj(v) && as_obj(v)->type == OBJ_SYMBOL;
+}
+static inline ObjSymbol *as_symbol(Value v) {
+    return (ObjSymbol *)as_obj(v);
+}
+static inline Value val_symbol(ObjSymbol *symbol) {
+    return val_obj(&symbol->obj);
 }
 
 void object_print(Value v);

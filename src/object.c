@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "memory.h"
+#include "table.h"
 #include "vm.h"  // IWYU pragma: keep
 
 static Obj *allocate_object(VM *vm, size_t size, ObjType type) {
@@ -28,6 +29,31 @@ ObjString *string_new(VM *vm, const char *chars, size_t length) {
     memcpy(string->chars, chars, length);
     string->chars[length] = '\0';
     return string;
+}
+
+// FNV-1a
+static uint32_t hash_chars(const char *chars, size_t length) {
+    uint32_t hash = 2166136261u;
+    for (size_t i = 0; i < length; i++) {
+        hash ^= (uint8_t)chars[i];
+        hash *= 16777619u;
+    }
+    return hash;
+}
+
+ObjSymbol *symbol_intern(VM *vm, const char *chars, size_t length) {
+    uint32_t hash = hash_chars(chars, length);
+    ObjSymbol *interned = table_find_symbol(&vm->symbols, chars, length, hash);
+    if (interned != NULL) return interned;
+
+    ObjSymbol *symbol =
+        (ObjSymbol *)allocate_object(vm, sizeof(ObjSymbol) + length + 1, OBJ_SYMBOL);
+    symbol->hash = hash;
+    symbol->length = length;
+    memcpy(symbol->chars, chars, length);
+    symbol->chars[length] = '\0';
+    table_set(vm, &vm->symbols, symbol, val_nil());
+    return symbol;
 }
 
 static void print_string(const ObjString *string) {
@@ -65,6 +91,9 @@ void object_print(Value v) {
     case OBJ_STRING:
         print_string(as_string(v));
         break;
+    case OBJ_SYMBOL:
+        printf("%s", as_symbol(v)->chars);
+        break;
     }
 }
 
@@ -76,6 +105,11 @@ static void free_object(VM *vm, Obj *object) {
     case OBJ_STRING: {
         ObjString *string = (ObjString *)object;
         reallocate(vm, object, sizeof(ObjString) + string->length + 1, 0);
+        break;
+    }
+    case OBJ_SYMBOL: {
+        ObjSymbol *symbol = (ObjSymbol *)object;
+        reallocate(vm, object, sizeof(ObjSymbol) + symbol->length + 1, 0);
         break;
     }
     }

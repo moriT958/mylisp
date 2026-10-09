@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "chunk.h"
+#include "table.h"
 #include "value.h"
 
 // Fixed size so the stack never moves while the GC scans it.
@@ -16,6 +17,7 @@ struct VM {
     Value *stack_top;
     size_t bytes_allocated;
     Obj *objects;
+    Table symbols;
 };
 
 typedef enum {

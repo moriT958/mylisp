@@ -19,10 +19,12 @@ void vm_init(VM *vm) {
     vm->ip = NULL;
     vm->bytes_allocated = 0;
     vm->objects = NULL;
+    table_init(&vm->symbols);
     reset_stack(vm);
 }
 
 void vm_free(VM *vm) {
+    table_free(vm, &vm->symbols);
     object_free_all(vm);
 }
 
