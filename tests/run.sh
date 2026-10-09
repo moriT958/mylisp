@@ -1,32 +1,44 @@
 #!/bin/sh
 # Usage: tests/run.sh <path to binary>
-set -eu
+set -u
 
 bin="$1"
-fail=0
+dir=$(dirname "$0")
+failed=0
 
-# TODO:
-# This is temporary.
-# mylisp has no Reader, so the binary dumps a hand-built chunk.
-expected="== 1 + 2 * 3 ==
-0000 OP_CONST     0 '1'
-0002 OP_CONST     1 '2'
-0004 OP_CONST     2 '3'
-0006 OP_MUL
-0007 OP_ADD
-0008 OP_RETURN
-7"
+check() {
+  if [ "$2" = "$3" ]; then
+    echo "ok   $1"
+  else
+    echo "FAIL $1"
+    echo "--- expected"
+    echo "$2"
+    echo "--- actual"
+    echo "$3"
+    failed=1
+  fi
+}
 
-actual=$("$bin")
-if [ "$actual" = "$expected" ]; then
-  echo "ok"
-else
-  echo "failed: disassembly mismatch"
-  echo "--- expected"
-  echo "$expected"
-  echo "--- actual"
-  echo "$actual"
-  fail=1
-fi
+# The same source must give the same output as a file and through stdin, which
+# exercises the REPL's handling of forms that span several lines.
+for scm in "$dir"/cases/*.scm; do
+  name=$(basename "$scm" .scm)
+  expected=$(cat "${scm%.scm}.out")
+  check "$name (file)" "$expected" "$("$bin" "$scm" 2>&1)"
+  check "$name (stdin)" "$expected" "$("$bin" <"$scm" 2>&1)"
+done
 
-exit "$fail"
+# File mode only: the REPL keeps going after an error, a file run stops.
+for scm in "$dir"/errors/*.scm; do
+  name=$(basename "$scm" .scm)
+  expected=$(cat "${scm%.scm}.out")
+  actual=$("$bin" "$scm" 2>&1)
+  status=$?
+  check "$name" "$expected" "$actual"
+  if [ "$status" -eq 0 ]; then
+    echo "FAIL $name: expected a non-zero exit status"
+    failed=1
+  fi
+done
+
+exit "$failed"

@@ -81,16 +81,22 @@ static Token hash_literal(Lexer *lexer) {
 
 // The token includes both quotes and the raw escapes; decoding is the parser's job.
 static Token string(Lexer *lexer) {
+    // Report where the string began: by the time we hit the end of input the
+    // line counter points at the last line, far from the missing quote.
+    int start_line = lexer->line;
     for (;;) {
-        if (is_at_end(lexer)) return error_token(lexer, "unterminated string");
+        if (is_at_end(lexer)) break;
         char c = advance(lexer);
         if (c == '\n') lexer->line++;
         if (c == '"') return make_token(lexer, TOKEN_STRING);
         if (c == '\\') {
-            if (is_at_end(lexer)) return error_token(lexer, "unterminated string");
+            if (is_at_end(lexer)) break;
             if (advance(lexer) == '\n') lexer->line++;
         }
     }
+    Token token = error_token(lexer, "unterminated string");
+    token.line = start_line;
+    return token;
 }
 
 Token lexer_next(Lexer *lexer) {

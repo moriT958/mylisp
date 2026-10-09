@@ -1,0 +1,5 @@
+(quote x)
+(quote (1 2))
+(quote (quote a))
+(a (quote b) c)
+(quote ())
