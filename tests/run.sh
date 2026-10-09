@@ -14,7 +14,8 @@ expected="== 1 + 2 * 3 ==
 0004 OP_CONST     2 '3'
 0006 OP_MUL
 0007 OP_ADD
-0008 OP_RETURN"
+0008 OP_RETURN
+7"
 
 actual=$("$bin")
 if [ "$actual" = "$expected" ]; then
