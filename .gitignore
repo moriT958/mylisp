@@ -1,1 +1,7 @@
 docs/devmemo/*
+
+# Build output
+build/
+
+# OS files
+.DS_Store
