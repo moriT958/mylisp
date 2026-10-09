@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "memory.h"
+#include "object.h"
 
 bool value_is_truthy(Value v) {
     return !(is_bool(v) && !as_bool(v));
@@ -36,8 +37,7 @@ void value_print(Value v) {
         printf("%" PRId64, as_int(v));
         break;
     case VAL_OBJ:
-        // Placeholder until the object types exist.
-        printf("#<object %p>", (void *)as_obj(v));
+        object_print(v);
         break;
     }
 }
