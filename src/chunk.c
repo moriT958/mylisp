@@ -1,7 +1,6 @@
 #include "chunk.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include "memory.h"
 
 void chunk_init(Chunk *chunk) {
     chunk->count = 0;
@@ -10,23 +9,17 @@ void chunk_init(Chunk *chunk) {
     value_array_init(&chunk->constants);
 }
 
-// TODO: switch to the GC-aware reallocate() once the heap exists.
 void chunk_write(Chunk *chunk, uint8_t byte) {
     if (chunk->capacity < chunk->count + 1) {
-        size_t new_capacity = chunk->capacity < 8 ? 8 : chunk->capacity * 2;
-        uint8_t *grown = realloc(chunk->code, new_capacity);
-        if (grown == NULL) {
-            fprintf(stderr, "out of memory\n");
-            exit(1);
-        }
-        chunk->code = grown;
-        chunk->capacity = new_capacity;
+        size_t old_capacity = chunk->capacity;
+        chunk->capacity = grow_capacity(old_capacity);
+        chunk->code = GROW_ARRAY(uint8_t, chunk->code, old_capacity, chunk->capacity);
     }
     chunk->code[chunk->count++] = byte;
 }
 
 void chunk_free(Chunk *chunk) {
-    free(chunk->code);
+    FREE_ARRAY(uint8_t, chunk->code, chunk->capacity);
     value_array_free(&chunk->constants);
     chunk_init(chunk);
 }

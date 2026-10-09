@@ -2,7 +2,8 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
+
+#include "memory.h"
 
 bool value_is_truthy(Value v) {
     return !(is_bool(v) && !as_bool(v));
@@ -47,22 +48,16 @@ void value_array_init(ValueArray *array) {
     array->values = NULL;
 }
 
-// TODO: switch to the GC-aware reallocate() once the heap exists.
 void value_array_write(ValueArray *array, Value v) {
     if (array->capacity < array->count + 1) {
-        size_t new_capacity = array->capacity < 8 ? 8 : array->capacity * 2;
-        Value *grown = realloc(array->values, sizeof(Value) * new_capacity);
-        if (grown == NULL) {
-            fprintf(stderr, "out of memory\n");
-            exit(1);
-        }
-        array->values = grown;
-        array->capacity = new_capacity;
+        size_t old_capacity = array->capacity;
+        array->capacity = grow_capacity(old_capacity);
+        array->values = GROW_ARRAY(Value, array->values, old_capacity, array->capacity);
     }
     array->values[array->count++] = v;
 }
 
 void value_array_free(ValueArray *array) {
-    free(array->values);
+    FREE_ARRAY(Value, array->values, array->capacity);
     value_array_init(array);
 }
