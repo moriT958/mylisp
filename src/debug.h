@@ -7,8 +7,7 @@
 
 void disassemble_chunk(const Chunk *chunk, const char *name);
 
-// Returns the offset of the next instruction, so callers can walk a chunk
-// without knowing each instruction's length.
+// Returns the next instruction's offset, since instruction lengths vary.
 size_t disassemble_instruction(const Chunk *chunk, size_t offset);
 
 #endif

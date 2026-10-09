@@ -40,7 +40,7 @@ size_t disassemble_instruction(const Chunk *chunk, size_t offset) {
     case OP_RETURN:
         return simple_instruction("OP_RETURN", offset);
     default:
-        // Skip one byte so a corrupt chunk still prints to the end instead of looping.
+        // Advance anyway so the dump continues past a bad byte.
         printf("unknown opcode %u\n", opcode);
         return offset + 1;
     }

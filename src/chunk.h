@@ -26,8 +26,7 @@ void chunk_init(Chunk *chunk);
 void chunk_write(Chunk *chunk, uint8_t byte);
 void chunk_free(Chunk *chunk);
 
-// Returns the index of the constant. Operands are one byte to keep the
-// encoding simple, so the compiler must reject indexes above 255.
+// Operands are one byte, so the compiler must reject indexes above 255.
 size_t chunk_add_constant(Chunk *chunk, Value value);
 
 #endif

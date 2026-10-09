@@ -5,9 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-// Forward declaration only: Value needs just a pointer to Obj, and object.h
-// will include this header (cons cells hold Values), so including object.h
-// here would create a circular include.
+// Forward declaration: object.h includes this header, so including it here would be circular.
 typedef struct Obj Obj;
 
 typedef enum {
@@ -26,9 +24,6 @@ typedef struct {
     } as;
 } Value;
 
-// These are static inline functions rather than macros so that argument types
-// are checked and arguments are evaluated exactly once. With a macro,
-// is_int(pop()) could pop the VM stack twice.
 static inline Value val_nil(void) { return (Value){VAL_NIL, {.integer = 0}}; }
 static inline Value val_bool(bool b) { return (Value){VAL_BOOL, {.boolean = b}}; }
 static inline Value val_int(int64_t n) { return (Value){VAL_INT, {.integer = n}}; }
@@ -39,20 +34,18 @@ static inline bool is_bool(Value v) { return v.type == VAL_BOOL; }
 static inline bool is_int(Value v) { return v.type == VAL_INT; }
 static inline bool is_obj(Value v) { return v.type == VAL_OBJ; }
 
-// The caller must check the type first; reading the wrong union member is undefined.
 static inline bool as_bool(Value v) { return v.as.boolean; }
 static inline int64_t as_int(Value v) { return v.as.integer; }
 static inline Obj *as_obj(Value v) { return v.as.obj; }
 
-// Scheme truthiness: only #f is false, so nil (the empty list) and 0 are true.
+// Unlike C, only #f is false: nil and 0 are true.
 bool value_is_truthy(Value v);
 
-// eq? semantics: objects compare by identity, so two equal-looking lists are not eq?.
+// eq? semantics: objects compare by identity.
 bool values_equal(Value a, Value b);
 
 void value_print(Value v);
 
-// Lives here, not in chunk.h, because the GC must also walk constant tables as Value arrays.
 typedef struct {
     size_t count;
     size_t capacity;

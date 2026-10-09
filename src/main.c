@@ -4,9 +4,7 @@
 
 #include <stdio.h>
 
-// TODO:
-// Temporary driver: there is no Reader yet, so build `1 + 2 * 3` by hand to
-// exercise the chunk, the disassembler, and the VM. Replace it with the REPL once the Reader exists.
+// TODO: temporary driver; replace with the REPL once the Reader exists.
 int main(void) {
     Chunk chunk;
     chunk_init(&chunk);

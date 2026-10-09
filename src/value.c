@@ -36,7 +36,7 @@ void value_print(Value v) {
         printf("%" PRId64, as_int(v));
         break;
     case VAL_OBJ:
-        // Placeholder: real printing needs the concrete object types, which come with object.h.
+        // Placeholder until the object types exist.
         printf("#<object %p>", (void *)as_obj(v));
         break;
     }

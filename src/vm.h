@@ -6,8 +6,7 @@
 #include "chunk.h"
 #include "value.h"
 
-// Fixed size so push never allocates: the GC will run inside allocation, and
-// the stack must stay valid (and scannable as a root) at that point.
+// Fixed size so the stack never moves while the GC scans it.
 enum { STACK_MAX = 256 };
 
 typedef struct {
@@ -24,8 +23,7 @@ typedef enum {
 
 void vm_init(VM *vm);
 
-// On INTERPRET_OK, *result holds the value returned by the chunk. Errors are
-// reported on stderr and leave *result untouched.
+// *result is written only on INTERPRET_OK.
 InterpretResult vm_interpret(VM *vm, const Chunk *chunk, Value *result);
 
 #endif
