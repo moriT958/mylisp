@@ -6,23 +6,14 @@
 
 #include "value.h"
 
-// One list drives the enum and the name table, so adding an instruction
-// cannot leave one of them stale.
-#define OPCODES(X) \
-    X(OP_CONST)    \
-    X(OP_ADD)      \
-    X(OP_SUB)      \
-    X(OP_MUL)      \
-    X(OP_DIV)      \
-    X(OP_RETURN)
-
 typedef enum {
-#define X(name) name,
-    OPCODES(X)
-#undef X
+    OP_CONST,
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
+    OP_RETURN,
 } OpCode;
-
-const char *opcode_name(uint8_t opcode);
 
 typedef struct {
     size_t count;

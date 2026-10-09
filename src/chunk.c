@@ -3,17 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static const char *opcode_names[] = {
-#define X(name) #name,
-    OPCODES(X)
-#undef X
-};
-
-const char *opcode_name(uint8_t opcode) {
-    if (opcode >= sizeof(opcode_names) / sizeof(opcode_names[0])) return "OP_UNKNOWN";
-    return opcode_names[opcode];
-}
-
 void chunk_init(Chunk *chunk) {
     chunk->count = 0;
     chunk->capacity = 0;

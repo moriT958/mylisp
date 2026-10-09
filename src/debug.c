@@ -28,13 +28,13 @@ size_t disassemble_instruction(const Chunk *chunk, size_t offset) {
     uint8_t opcode = chunk->code[offset];
     switch (opcode) {
     case OP_CONST:
-        return constant_instruction(opcode_name(opcode), chunk, offset);
+        return constant_instruction("OP_CONST", chunk, offset);
     case OP_ADD:
     case OP_SUB:
     case OP_MUL:
     case OP_DIV:
     case OP_RETURN:
-        return simple_instruction(opcode_name(opcode), offset);
+        return simple_instruction("OP_RETURN", offset);
     default:
         // Skip one byte so a corrupt chunk still prints to the end instead of looping.
         printf("unknown opcode %u\n", opcode);
