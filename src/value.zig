@@ -5,6 +5,7 @@ const object = @import("object.zig");
 const Obj = object.Obj;
 const ObjPair = object.ObjPair;
 const ObjString = object.ObjString;
+const ObjSymbol = object.ObjSymbol;
 
 pub const Value = union(enum) {
     nil,
@@ -22,6 +23,13 @@ pub const Value = union(enum) {
     pub fn asString(self: Value) ?*ObjString {
         return switch (self) {
             .obj => |obj| if (obj.kind == .string) ObjString.fromObj(obj) else null,
+            .nil, .boolean, .int => null,
+        };
+    }
+
+    pub fn asSymbol(self: Value) ?*ObjSymbol {
+        return switch (self) {
+            .obj => |obj| if (obj.kind == .symbol) ObjSymbol.fromObj(obj) else null,
             .nil, .boolean, .int => null,
         };
     }

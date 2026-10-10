@@ -6,6 +6,7 @@ const Value = @import("value.zig").Value;
 pub const ObjKind = enum {
     pair,
     string,
+    symbol,
 };
 
 pub const Obj = struct {
@@ -40,6 +41,22 @@ pub const ObjString = struct {
     }
 
     pub fn value(self: *ObjString) Value {
+        return .{ .obj = &self.obj };
+    }
+};
+
+// Interned by the heap: one object per distinct name, so symbols compare by pointer.
+pub const ObjSymbol = struct {
+    obj: Obj,
+    // Owned by the heap and freed with the object. The intern table's key points here.
+    chars: []u8,
+
+    pub fn fromObj(obj: *Obj) *ObjSymbol {
+        std.debug.assert(obj.kind == .symbol);
+        return @fieldParentPtr("obj", obj);
+    }
+
+    pub fn value(self: *ObjSymbol) Value {
         return .{ .obj = &self.obj };
     }
 };

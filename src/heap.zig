@@ -6,18 +6,23 @@ const object = @import("object.zig");
 const Obj = object.Obj;
 const ObjPair = object.ObjPair;
 const ObjString = object.ObjString;
+const ObjSymbol = object.ObjSymbol;
 const Value = @import("value.zig").Value;
 
 pub const Heap = struct {
     counting: CountingAllocator,
     // Most recently created first.
     objects: ?*Obj = null,
+    // Keys are the symbols' own name bytes, so lookup by content needs no extra copy.
+    symbols: std.StringHashMapUnmanaged(*ObjSymbol) = .empty,
 
     pub fn init(backing: std.mem.Allocator) Heap {
         return .{ .counting = CountingAllocator.init(backing) };
     }
 
     pub fn deinit(self: *Heap) void {
+        self.symbols.deinit(self.allocator());
+        self.symbols = .empty;
         var current = self.objects;
         while (current) |obj| {
             // Read next first: freeing the object invalidates it.
@@ -48,6 +53,21 @@ pub const Heap = struct {
         return string;
     }
 
+    pub fn intern(self: *Heap, name: []const u8) !*ObjSymbol {
+        if (self.symbols.get(name)) |existing| return existing;
+
+        const a = self.allocator();
+        const symbol = try a.create(ObjSymbol);
+        errdefer a.destroy(symbol);
+        const copy = try a.dupe(u8, name);
+        errdefer a.free(copy);
+        // Last fallible step: once the table has the symbol, nothing below can fail.
+        try self.symbols.put(a, copy, symbol);
+        symbol.* = .{ .obj = .{ .kind = .symbol, .next = self.objects }, .chars = copy };
+        self.objects = &symbol.obj;
+        return symbol;
+    }
+
     // Built per call, not stored: the interface points at self.counting, so it
     // would dangle if the heap moved.
     fn allocator(self: *Heap) std.mem.Allocator {
@@ -62,6 +82,11 @@ pub const Heap = struct {
                 const string = ObjString.fromObj(obj);
                 a.free(string.chars);
                 a.destroy(string);
+            },
+            .symbol => {
+                const symbol = ObjSymbol.fromObj(obj);
+                a.free(symbol.chars);
+                a.destroy(symbol);
             },
         }
     }
@@ -198,4 +223,109 @@ test "a string whose bytes cannot be allocated releases its header" {
     try testing.expectError(error.OutOfMemory, heap.newString("hello"));
     try testing.expect(heap.objects == null);
     try testing.expectEqual(0, heap.bytesAllocated());
+}
+
+test "the same name interns to the same symbol" {
+    var heap = Heap.init(testing.allocator);
+    defer heap.deinit();
+
+    const first = try heap.intern("foo");
+    const second = try heap.intern("foo");
+    try testing.expectEqual(first, second);
+    try testing.expectEqualStrings("foo", first.chars);
+}
+
+test "different names are different symbols" {
+    var heap = Heap.init(testing.allocator);
+    defer heap.deinit();
+
+    const foo = try heap.intern("foo");
+    try testing.expect(foo != try heap.intern("bar"));
+    try testing.expect(foo != try heap.intern("fo"));
+    try testing.expect(foo != try heap.intern("fooo"));
+    try testing.expect(foo != try heap.intern("Foo"));
+}
+
+test "the empty name is a valid symbol" {
+    var heap = Heap.init(testing.allocator);
+    defer heap.deinit();
+
+    const empty = try heap.intern("");
+    try testing.expectEqual(0, empty.chars.len);
+    try testing.expectEqual(empty, try heap.intern(""));
+}
+
+test "a symbol copies its name" {
+    var heap = Heap.init(testing.allocator);
+    defer heap.deinit();
+
+    var source = [_]u8{ 'a', 'b' };
+    const symbol = try heap.intern(&source);
+    source[0] = 'z';
+    try testing.expectEqualStrings("ab", symbol.chars);
+    try testing.expectEqual(symbol, try heap.intern("ab"));
+}
+
+test "a symbol and a string with the same text are different values" {
+    var heap = Heap.init(testing.allocator);
+    defer heap.deinit();
+
+    const symbol = (try heap.intern("foo")).value();
+    const string = (try heap.newString("foo")).value();
+    try testing.expect(!Value.eql(symbol, string));
+    try testing.expect(symbol.asSymbol() != null and symbol.asString() == null);
+    try testing.expect(string.asString() != null and string.asSymbol() == null);
+    try testing.expect(symbol.asPair() == null);
+}
+
+test "many symbols stay findable and pointer-stable while the table grows" {
+    var heap = Heap.init(testing.allocator);
+    defer heap.deinit();
+
+    var symbols: [2000]*ObjSymbol = undefined;
+    var buffer: [16]u8 = undefined;
+    for (&symbols, 0..) |*slot, i| {
+        slot.* = try heap.intern(try std.fmt.bufPrint(&buffer, "sym-{d}", .{i}));
+    }
+    for (symbols, 0..) |expected, i| {
+        const name = try std.fmt.bufPrint(&buffer, "sym-{d}", .{i});
+        try testing.expectEqual(expected, try heap.intern(name));
+    }
+    try testing.expectEqual(2000, heap.symbols.count());
+}
+
+test "heaps have independent symbol tables" {
+    var first = Heap.init(testing.allocator);
+    defer first.deinit();
+    var second = Heap.init(testing.allocator);
+    defer second.deinit();
+
+    const a = try first.intern("foo");
+    const b = try second.intern("foo");
+    try testing.expect(a != b);
+}
+
+test "interning counts its table and releases everything on deinit" {
+    var heap = Heap.init(testing.allocator);
+
+    _ = try heap.intern("one");
+    _ = try heap.intern("two");
+    try testing.expect(heap.bytesAllocated() > 2 * @sizeOf(ObjSymbol));
+    heap.deinit();
+    try testing.expectEqual(0, heap.bytesAllocated());
+    try testing.expectEqual(0, heap.symbols.count());
+}
+
+test "a failed intern leaves the heap unchanged at every allocation step" {
+    // The steps are the object header, the name bytes, and the table storage.
+    for (0..3) |fail_index| {
+        var failing = testing.FailingAllocator.init(testing.allocator, .{ .fail_index = fail_index });
+        var heap = Heap.init(failing.allocator());
+        defer heap.deinit();
+
+        try testing.expectError(error.OutOfMemory, heap.intern("foo"));
+        try testing.expect(heap.objects == null);
+        try testing.expectEqual(0, heap.symbols.count());
+        try testing.expectEqual(0, heap.bytesAllocated());
+    }
 }
