@@ -1,7 +1,6 @@
 docs/devmemo/*
 
 # Build output
-build/
 .zig-cache/
 zig-out/
 
