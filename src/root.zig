@@ -7,6 +7,7 @@
 // or its test blocks silently never run.
 test {
     _ = @import("heap.zig");
+    _ = @import("lexer.zig");
     _ = @import("memory.zig");
     _ = @import("object.zig");
     _ = @import("value.zig");
