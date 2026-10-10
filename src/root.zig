@@ -10,5 +10,6 @@ test {
     _ = @import("lexer.zig");
     _ = @import("memory.zig");
     _ = @import("object.zig");
+    _ = @import("reader.zig");
     _ = @import("value.zig");
 }

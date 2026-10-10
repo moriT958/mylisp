@@ -70,7 +70,7 @@ pub const Heap = struct {
 
     // Built per call, not stored: the interface points at self.counting, so it
     // would dangle if the heap moved.
-    fn allocator(self: *Heap) std.mem.Allocator {
+    pub fn allocator(self: *Heap) std.mem.Allocator {
         return self.counting.allocator();
     }
 
