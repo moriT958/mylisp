@@ -1,7 +1,8 @@
 docs/devmemo/*
 
 # Build output
-build/
+.zig-cache/
+zig-out/
 
 # OS files
 .DS_Store

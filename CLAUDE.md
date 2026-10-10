@@ -1,11 +1,12 @@
 # mylisp
 
-A Scheme-subset interpreter in C: stack-based bytecode VM with a self-made mark-and-sweep GC.
+A Scheme-subset interpreter in Zig (0.16): stack-based bytecode VM with a self-made mark-and-sweep GC.
 
 ## Design decisions
 
 - No separate AST. The Reader's S-expression (heap cons cells) is compiled directly in one pass.
 - Closures use upvalues (open/close). Tail calls use a `TAILCALL` instruction.
+- Every heap allocation goes through one allocator that counts bytes, so the GC can decide when to collect.
 - The temporary user memo about plan is in `docs/devmemo/TASK.md` (gitignored, Japanese). Follow its stage order and confirm each stage's check before moving on.
 
 ## Language
@@ -15,11 +16,12 @@ A Scheme-subset interpreter in C: stack-based bytecode VM with a self-made mark-
 
 ## Build
 
-- `make` / `make debug`: `-O0 -g` with ASan and UBSan (`build/debug/mylisp`).
-- `make release`: `-O2 -DNDEBUG` (`build/release/mylisp`).
-- `make test`: runs `tests/run.sh` against the built binary.
-- GC debug features are macros: `make clean && make EXTRA_CFLAGS="-DDEBUG_STRESS_GC -DDEBUG_LOG_GC"`. Run `make clean` first when changing macros.
-- Code must build without warnings under `-std=c11 -Wall -Wextra -Wpedantic`.
+- `zig build`: debug build (`zig-out/bin/mylisp`). Add `-Doptimize=ReleaseSafe` or `-Doptimize=ReleaseFast` for the others.
+- `zig build run -- [file]`: start the REPL, or run a file.
+- `zig build test`: run the unit tests and the end-to-end tests.
+- `zig build fmt`: format the sources. `zig fmt --check build.zig src` must pass.
+- Debug features (GC stress, GC log, execution trace) are `comptime` build options, not macros.
+- Zig's standard library changes between versions. Check an API against the std source (`zig env` prints `std_dir`) instead of relying on memory.
 
 ## Code style
 
@@ -30,26 +32,28 @@ A Scheme-subset interpreter in C: stack-based bytecode VM with a self-made mark-
 ### Comments
 
 - Write WHY: the reason, constraint, or trade-off. Do not restate what the code does.
-- Use `//` for every comment, never `/* */` (block comments do not nest).
-- Disable code with `#if 0`, not comments.
+- Use `//` for comments. Use `///` and `//!` only to document public API or describe a file, not for WHY notes.
+- Do not leave commented-out code; delete it.
 
-### Functions and macros
+### Idioms
 
-- Prefer `static inline` functions (snake_case) and `enum` constants over macros. Functions give type checking, single evaluation of arguments, and debuggability.
-- Use macros only where a function cannot do the job:
-  - conditional compilation (`DEBUG_STRESS_GC`, `DEBUG_LOG_GC`, include guards)
-  - taking a type or an operator token as an argument (`ALLOCATE(type, n)`)
-  - `__FILE__` / `__LINE__` capture
-- A helper that merely reads or computes a value is a `static inline` function, even when it is used in only one place (`read_byte(vm)`, not a local macro). If an operation can be passed as a function pointer, do that instead of passing a token to a macro.
-- When writing a macro: UPPER_CASE name, parenthesize each argument and the whole body, wrap multi-statement bodies in `do { ... } while (0)`, and evaluate each argument once.
+Follow the Zig standard library's conventions:
+
+- Errors are error unions (`!T`) with `try` and `errdefer`. Absence is an optional (`?T`), not a sentinel value.
+- Use slices (`[]const u8`), not a pointer plus a length.
+- Use tagged unions and exhaustive `switch`. Do not add `else` to a `switch` just to silence a missing case.
+- Compile-time configuration is `comptime` and build options, not preprocessor tricks.
+- Pass `std.mem.Allocator` explicitly. A type that owns memory has `init` and `deinit`, used with `defer`.
+- Prefer `std.ArrayList` and `std.HashMap` over hand-written containers.
+- Mark `pub` only what another file uses. `src/root.zig` is the library's public API.
+- Standard streams use `writerStreaming` and `readerStreaming`; the positional `writer` overwrites redirected output.
 
 ### Naming
 
-- Functions and variables: `snake_case`, prefixed by module where it avoids ambiguity (`value_print`, `value_array_write`).
-- Types and enum values: `CamelCase` types (`Value`, `ValueArray`), `PREFIX_UPPER` enum values (`VAL_INT`).
-- Include guards: `MYLISP_<NAME>_H`.
+Follow the Zig style guide: types are `PascalCase`, functions are `camelCase`, variables, fields, and file names are `snake_case`.
 
 ## Testing
 
-- No C unit tests. Only integration/E2E tests: `.scm` input plus expected output under `tests/`, run by `tests/run.sh`.
-- Until the Reader exists (stage 2), use a temporary hand-built-chunk driver in `main.c` and replace it with `.scm` tests afterwards.
+- Unit tests are `test` blocks next to the code they check, run by `zig build test`. Use `std.testing.allocator` so leaks fail the test. Cover the components that can be tested in isolation: lexer, reader, symbol table, allocator accounting, VM instructions.
+- End-to-end tests are `.scm` input plus expected output under `tests/`, run by `tests/run.sh` against the built binary (`zig build test` runs it). They pin what a user sees through the REPL and file runner.
+- A behavior bug found through an end-to-end test gets a unit test at the component where it lives.
