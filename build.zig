@@ -26,8 +26,17 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| run_cmd.addArgs(args);
     b.step("run", "Run the interpreter").dependOn(&run_cmd.step);
 
+    const test_step = b.step("test", "Run the unit and end-to-end tests");
+
     const unit_tests = b.addTest(.{ .root_module = mylisp });
-    b.step("test", "Run unit tests").dependOn(&b.addRunArtifact(unit_tests).step);
+    test_step.dependOn(&b.addRunArtifact(unit_tests).step);
+
+    // The script reads .scm files the build graph does not track, so a cached
+    // result would go stale when only a test case changes.
+    const e2e = b.addSystemCommand(&.{ "sh", "tests/run.sh" });
+    e2e.addArtifactArg(exe);
+    e2e.has_side_effects = true;
+    test_step.dependOn(&e2e.step);
 
     const fmt = b.addFmt(.{ .paths = &.{ "build.zig", "src" } });
     b.step("fmt", "Format the Zig sources").dependOn(&fmt.step);

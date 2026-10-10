@@ -330,7 +330,11 @@ test "nesting exactly at the limit still reads" {
 }
 
 test "a very long flat list is read without recursion" {
-    var heap = Heap.init(testing.allocator);
+    // An arena, not the testing allocator: that one records a stack trace per
+    // allocation, which makes hundreds of thousands of them take seconds.
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var heap = Heap.init(arena.allocator());
     defer heap.deinit();
 
     const count = 200_000;

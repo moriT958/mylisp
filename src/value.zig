@@ -181,7 +181,11 @@ test "nested lists and mixed contents print recursively" {
 }
 
 test "a very long list prints without recursing per element" {
-    var heap = Heap.init(testing.allocator);
+    // An arena, not the testing allocator: that one records a stack trace per
+    // allocation, which makes a hundred thousand of them take seconds.
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    var heap = Heap.init(arena.allocator());
     defer heap.deinit();
 
     var long: Value = .nil;
