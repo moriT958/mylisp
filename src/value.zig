@@ -1,13 +1,30 @@
 //! Runtime values: nil, booleans, integers, and references to heap objects.
 
 const std = @import("std");
-const Obj = @import("object.zig").Obj;
+const object = @import("object.zig");
+const Obj = object.Obj;
+const ObjPair = object.ObjPair;
+const ObjString = object.ObjString;
 
 pub const Value = union(enum) {
     nil,
     boolean: bool,
     int: i64,
     obj: *Obj,
+
+    pub fn asPair(self: Value) ?*ObjPair {
+        return switch (self) {
+            .obj => |obj| if (obj.kind == .pair) ObjPair.fromObj(obj) else null,
+            .nil, .boolean, .int => null,
+        };
+    }
+
+    pub fn asString(self: Value) ?*ObjString {
+        return switch (self) {
+            .obj => |obj| if (obj.kind == .string) ObjString.fromObj(obj) else null,
+            .nil, .boolean, .int => null,
+        };
+    }
 
     // Only #f is false: nil and 0 are true, in Scheme.
     pub fn isTruthy(self: Value) bool {

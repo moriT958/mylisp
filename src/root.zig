@@ -6,6 +6,7 @@
 // Nothing references the files themselves, so each file must be listed here
 // or its test blocks silently never run.
 test {
+    _ = @import("heap.zig");
     _ = @import("memory.zig");
     _ = @import("object.zig");
     _ = @import("value.zig");
